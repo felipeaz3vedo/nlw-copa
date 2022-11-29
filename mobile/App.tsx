@@ -1,24 +1,36 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { Loading } from "./src/components/Loading";
+import { NativeBaseProvider, StatusBar } from "native-base";
+import {
+  useFonts,
+  Roboto_400Regular,
+  Roboto_500Medium,
+  Roboto_700Bold
+} from "@expo-google-fonts/roboto";
+
+import { THEME } from "./src/styles/theme";
+import { SignIn } from "./src/screens/SignIn";
+import { AuthContextProvider } from "./src/contexts/AuthContext";
+import { New } from "./src/screens/New";
+import { Find } from "./src/screens/Find";
+import { Polls } from "./src/screens/Polls";
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Roboto_400Regular,
+    Roboto_500Medium,
+    Roboto_700Bold
+  });
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Hello React Navive!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NativeBaseProvider theme={THEME}>
+      <AuthContextProvider>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor="transparent"
+          translucent
+        />
+
+        {fontsLoaded ? <SignIn /> : <Loading />}
+      </AuthContextProvider>
+    </NativeBaseProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    color: "#ffffff",
-    fontSize: 24
-  }
-});
