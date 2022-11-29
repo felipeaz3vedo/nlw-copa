@@ -1,22 +1,36 @@
 import { FastifyInstance } from "fastify";
+
 import { z } from "zod";
-import fetch from "node-fetch";
+
 import { prisma } from "../lib/prisma";
 
-export const authRoutes = async (fastify: FastifyInstance) => {
+import fetch from "node-fetch";
+import { authenticate } from "../plugins/authenticate";
+
+export async function authRoutes(fastify: FastifyInstance) {
+  fastify.get(
+    "/me",
+    {
+      onRequest: [authenticate]
+    },
+    async request => {
+      return { user: request.user };
+    }
+  );
+
   fastify.post("/users", async request => {
     const createUserBody = z.object({
-      acess_token: z.string()
+      access_token: z.string()
     });
 
-    const { acess_token } = createUserBody.parse(request.body);
+    const { access_token } = createUserBody.parse(request.body);
 
     const userResponse = await fetch(
       "https://www.googleapis.com/oauth2/v2/userinfo",
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${acess_token}`
+          Authorization: `Bearer ${access_token}`
         }
       }
     );
@@ -38,17 +52,28 @@ export const authRoutes = async (fastify: FastifyInstance) => {
       }
     });
 
-    if (!user) {
+    if (user == null) {
       user = await prisma.user.create({
         data: {
           googleId: userInfo.id,
-          name: userInfo.name,
           email: userInfo.email,
+          name: userInfo.name,
           avatarUrl: userInfo.picture
         }
       });
     }
 
-    return { userInfo };
+    const token = fastify.jwt.sign(
+      {
+        name: user.name,
+        avatarUrl: user.avatarUrl
+      },
+      {
+        sub: user.id,
+        expiresIn: "7 days"
+      }
+    );
+
+    return { token };
   });
-};
+}
